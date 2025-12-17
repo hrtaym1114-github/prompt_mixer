@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 
 /// 認証状態を管理する Provider
 class AuthProvider with ChangeNotifier {
@@ -44,6 +45,11 @@ class AuthProvider with ChangeNotifier {
 
       final userCredential = await _authService.signInWithGoogle();
       _user = userCredential?.user;
+
+      // 初回ログイン時にサンプルテンプレートを作成
+      if (_user != null) {
+        await FirestoreService.createSampleTemplates();
+      }
 
       _isLoading = false;
       notifyListeners();
