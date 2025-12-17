@@ -35,48 +35,56 @@ class TemplateListScreen extends StatelessWidget {
       body: Consumer<TemplateProvider>(
         builder: (context, provider, child) {
           final templates = provider.templates;
-          final categories = provider.categories;
 
           return Column(
             children: [
               // カテゴリフィルター
-              if (categories.isNotEmpty)
-                Container(
-                  height: 50,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: categories.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
+              FutureBuilder<List<String>>(
+                future: provider.categories,
+                builder: (context, snapshot) {
+                  final categories = snapshot.data ?? [];
+                  if (categories.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  return Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: categories.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: const Text('すべて'),
+                              selected: provider.selectedCategory == null,
+                              onSelected: (_) => provider.setCategory(null),
+                            ),
+                          );
+                        }
+                        final category = categories[index - 1];
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: FilterChip(
-                            label: const Text('すべて'),
-                            selected: provider.selectedCategory == null,
-                            onSelected: (_) => provider.setCategory(null),
+                            label: Text(category),
+                            selected: provider.selectedCategory == category,
+                            onSelected: (_) {
+                              if (provider.selectedCategory == category) {
+                                provider.setCategory(null);
+                              } else {
+                                provider.setCategory(category);
+                              }
+                            },
                           ),
                         );
-                      }
-                      final category = categories[index - 1];
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(category),
-                          selected: provider.selectedCategory == category,
-                          onSelected: (_) {
-                            if (provider.selectedCategory == category) {
-                              provider.setCategory(null);
-                            } else {
-                              provider.setCategory(category);
-                            }
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                      },
+                    ),
+                  );
+                },
+              ),
 
               // テンプレートリスト
               Expanded(

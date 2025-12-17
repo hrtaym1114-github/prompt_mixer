@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'services/storage_service.dart';
+import 'services/auth_service.dart';
 import 'providers/template_provider.dart';
+import 'providers/auth_provider.dart';
 import 'theme/app_theme.dart';
+import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/template_list_screen.dart';
 
@@ -45,6 +50,11 @@ class _AppInitializerState extends State<AppInitializer> {
 
   Future<void> _initialize() async {
     try {
+      // Firebase 初期化
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      // ローカルストレージ初期化（オフライン時用に残す）
       await StorageService.init();
       if (mounted) {
         setState(() {
@@ -128,10 +138,53 @@ class _AppInitializerState extends State<AppInitializer> {
       );
     }
 
-    return ChangeNotifierProvider(
-      create: (context) => TemplateProvider()..loadTemplates(),
-      child: const MainNavigator(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(
+            authService: AuthService(),
+          )..checkAuthState(),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, TemplateProvider>(
+          create: (_) => TemplateProvider(),
+          update: (_, authProvider, templateProvider) {
+            final userId = authProvider.user?.uid;
+            if (userId != null && userId.isNotEmpty) {
+              templateProvider?.loadTemplates(userId: userId);
+            } else {
+              templateProvider?.loadTemplates();
+            }
+            return templateProvider ?? TemplateProvider();
+          },
+        ),
+      ],
+      child: const AuthGate(),
     );
+  }
+}
+
+/// 認証状態に応じて画面を切り替えるゲート
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
+    if (authProvider.isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF121212),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF9C6ADE)),
+        ),
+      );
+    }
+
+    if (authProvider.isAuthenticated) {
+      return const MainNavigator();
+    }
+
+    return const LoginScreen();
   }
 }
 

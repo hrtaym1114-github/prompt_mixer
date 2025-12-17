@@ -175,9 +175,10 @@ class _TemplateEditScreenState extends State<TemplateEditScreen> {
             const SizedBox(height: 16),
 
             // カテゴリ
-            Consumer<TemplateProvider>(
-              builder: (context, provider, child) {
-                final categories = provider.categories;
+            FutureBuilder<List<String>>(
+              future: Provider.of<TemplateProvider>(context, listen: false).categories,
+              builder: (context, snapshot) {
+                final categories = snapshot.data ?? [];
                 return TextField(
                   controller: _categoryController,
                   decoration: InputDecoration(

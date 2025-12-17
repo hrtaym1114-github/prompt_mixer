@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/prompt_template.dart';
-import '../services/storage_service.dart';
+import '../services/firestore_service.dart';
 
 class TemplateProvider extends ChangeNotifier {
   List<PromptTemplate> _templates = [];
@@ -8,6 +8,7 @@ class TemplateProvider extends ChangeNotifier {
   String _currentUrl = '';
   String? _selectedCategory;
   bool _showFavoritesOnly = false;
+  bool _isLoading = false;
 
   List<PromptTemplate> get templates {
     var result = _templates;
@@ -28,8 +29,10 @@ class TemplateProvider extends ChangeNotifier {
   String get currentUrl => _currentUrl;
   String? get selectedCategory => _selectedCategory;
   bool get showFavoritesOnly => _showFavoritesOnly;
+  bool get isLoading => _isLoading;
 
-  List<String> get categories => StorageService.getAllCategories();
+  Future<List<String>> get categories async => 
+      await FirestoreService.getAllCategories();
 
   /// 生成されたプロンプト出力
   String get generatedOutput {
@@ -42,10 +45,29 @@ class TemplateProvider extends ChangeNotifier {
     return _selectedTemplate!.generateOutput(_currentUrl);
   }
 
-  /// 初期化
-  void loadTemplates() {
-    _templates = StorageService.getAllTemplates();
+  /// 初期化（Firestoreからロード）
+  Future<void> loadTemplates({String? userId}) async {
+    _isLoading = true;
     notifyListeners();
+    
+    try {
+      _templates = await FirestoreService.getAllTemplates(userId: userId);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Load templates error: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// テンプレートをリアルタイム監視
+  void startListening({String? userId}) {
+    FirestoreService.templatesStream(userId: userId).listen((templates) {
+      _templates = templates;
+      notifyListeners();
+    });
   }
 
   /// テンプレートを選択
@@ -86,48 +108,83 @@ class TemplateProvider extends ChangeNotifier {
     String? description,
     String? category,
   }) async {
-    await StorageService.createTemplate(
-      title: title,
-      content: content,
-      description: description,
-      category: category,
-    );
-    loadTemplates();
+    try {
+      await FirestoreService.createTemplate(
+        title: title,
+        content: content,
+        description: description,
+        category: category,
+      );
+      await loadTemplates();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Create template error: $e');
+      }
+      rethrow;
+    }
   }
 
   /// テンプレートを更新
   Future<void> updateTemplate(PromptTemplate template) async {
-    await StorageService.updateTemplate(template);
-    loadTemplates();
-    
-    // 選択中のテンプレートが更新された場合、再取得
-    if (_selectedTemplate?.id == template.id) {
-      _selectedTemplate = StorageService.getTemplateById(template.id);
-      notifyListeners();
+    try {
+      await FirestoreService.updateTemplate(template);
+      await loadTemplates();
+      
+      // 選択中のテンプレートが更新された場合、再取得
+      if (_selectedTemplate?.id == template.id) {
+        _selectedTemplate = _templates.firstWhere(
+          (t) => t.id == template.id,
+          orElse: () => template,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Update template error: $e');
+      }
+      rethrow;
     }
   }
 
   /// テンプレートを削除
   Future<void> deleteTemplate(String id) async {
-    await StorageService.deleteTemplate(id);
-    
-    // 選択中のテンプレートが削除された場合、選択解除
-    if (_selectedTemplate?.id == id) {
-      _selectedTemplate = null;
+    try {
+      await FirestoreService.deleteTemplate(id);
+      
+      // 選択中のテンプレートが削除された場合、選択解除
+      if (_selectedTemplate?.id == id) {
+        _selectedTemplate = null;
+      }
+      
+      await loadTemplates();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Delete template error: $e');
+      }
+      rethrow;
     }
-    
-    loadTemplates();
   }
 
   /// お気に入りをトグル
   Future<void> toggleFavorite(String id) async {
-    await StorageService.toggleFavorite(id);
-    loadTemplates();
-    
-    // 選択中のテンプレートの場合、再取得
-    if (_selectedTemplate?.id == id) {
-      _selectedTemplate = StorageService.getTemplateById(id);
-      notifyListeners();
+    try {
+      final template = _templates.firstWhere((t) => t.id == id);
+      await FirestoreService.toggleFavorite(id, template.isFavorite);
+      await loadTemplates();
+      
+      // 選択中のテンプレートの場合、再取得
+      if (_selectedTemplate?.id == id) {
+        _selectedTemplate = _templates.firstWhere(
+          (t) => t.id == id,
+          orElse: () => template,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Toggle favorite error: $e');
+      }
+      rethrow;
     }
   }
 
