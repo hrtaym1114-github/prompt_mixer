@@ -48,7 +48,21 @@ class AuthProvider with ChangeNotifier {
 
       // 初回ログイン時にサンプルテンプレートを作成
       if (_user != null) {
-        await FirestoreService.createSampleTemplates();
+        if (kDebugMode) {
+          debugPrint('✅ User logged in: ${_user!.uid}');
+          debugPrint('🔄 Creating sample templates...');
+        }
+        try {
+          await FirestoreService.createSampleTemplates();
+          if (kDebugMode) {
+            debugPrint('✅ Sample templates created successfully');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('❌ Error creating sample templates: $e');
+          }
+          // エラーがあってもログイン自体は成功させる
+        }
       }
 
       _isLoading = false;

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../models/prompt_template.dart';
@@ -20,10 +21,16 @@ class FirestoreService {
   /// 全テンプレートを取得
   static Future<List<PromptTemplate>> getAllTemplates({String? userId}) async {
     try {
+      if (kDebugMode) {
+        debugPrint('📥 Fetching templates from Firestore...');
+      }
       final snapshot = await _userTemplatesCollection(userId: userId)
           .orderBy('updatedAt', descending: true)
           .get();
 
+      if (kDebugMode) {
+        debugPrint('📦 Received ${snapshot.docs.length} templates from Firestore');
+      }
       return snapshot.docs.map((doc) {
         final data = doc.data();
         return PromptTemplate(
@@ -38,6 +45,9 @@ class FirestoreService {
         );
       }).toList();
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Firestore getAllTemplates error: $e');
+      }
       return [];
     }
   }
@@ -126,8 +136,20 @@ class FirestoreService {
 
   /// サンプルテンプレートを作成（初回ログイン時）
   static Future<void> createSampleTemplates() async {
+    if (kDebugMode) {
+      debugPrint('🔍 Checking for existing templates...');
+    }
     final templates = await getAllTemplates();
-    if (templates.isNotEmpty) return; // 既にテンプレートがある場合はスキップ
+    if (templates.isNotEmpty) {
+      if (kDebugMode) {
+        debugPrint('✅ Templates already exist (${templates.length}), skipping sample creation');
+      }
+      return; // 既にテンプレートがある場合はスキップ
+    }
+    
+    if (kDebugMode) {
+      debugPrint('📝 Creating 5 sample templates...');
+    }
 
     final samples = [
       {
@@ -167,13 +189,27 @@ class FirestoreService {
       },
     ];
 
-    for (final sample in samples) {
-      await createTemplate(
-        title: sample['title'] as String,
-        content: sample['content'] as String,
-        description: sample['description'] as String,
-        category: sample['category'] as String,
-      );
+    for (var i = 0; i < samples.length; i++) {
+      final sample = samples[i];
+      if (kDebugMode) {
+        debugPrint('📝 Creating template ${i + 1}/${samples.length}: ${sample['title']}');
+      }
+      try {
+        await createTemplate(
+          title: sample['title'] as String,
+          content: sample['content'] as String,
+          description: sample['description'] as String,
+          category: sample['category'] as String,
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ Error creating template ${sample['title']}: $e');
+        }
+      }
+    }
+    
+    if (kDebugMode) {
+      debugPrint('✅ Sample templates creation completed');
     }
   }
 

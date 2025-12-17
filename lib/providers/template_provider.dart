@@ -51,10 +51,16 @@ class TemplateProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
+      if (kDebugMode) {
+        debugPrint('🔄 Loading templates for user: ${userId ?? "current user"}');
+      }
       _templates = await FirestoreService.getAllTemplates(userId: userId);
+      if (kDebugMode) {
+        debugPrint('✅ Loaded ${_templates.length} templates');
+      }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Load templates error: $e');
+        debugPrint('❌ Load templates error: $e');
       }
     } finally {
       _isLoading = false;
