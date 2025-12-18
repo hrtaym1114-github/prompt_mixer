@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/template_provider.dart';
+import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/url_input_card.dart';
 import '../widgets/template_selector.dart';
@@ -189,6 +190,80 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppTheme.textSecondary,
             onPressed: _clearAll,
             tooltip: 'クリア',
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle, color: AppTheme.textSecondary),
+            tooltip: 'アカウント',
+            onSelected: (value) async {
+              if (value == 'logout') {
+                final shouldLogout = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('ログアウト'),
+                    content: const Text('ログアウトしますか？\nデータはクラウドに保存されています。'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('キャンセル'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppTheme.errorRed,
+                        ),
+                        child: const Text('ログアウト'),
+                      ),
+                    ],
+                  ),
+                );
+                
+                if (shouldLogout == true && mounted) {
+                  await context.read<AuthProvider>().signOut();
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'user',
+                enabled: false,
+                child: Consumer<AuthProvider>(
+                  builder: (context, authProvider, _) {
+                    final user = authProvider.user;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user?.displayName ?? 'ユーザー',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        if (user?.email != null)
+                          Text(
+                            user!.email!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, size: 20, color: AppTheme.errorRed),
+                    SizedBox(width: 12),
+                    Text('ログアウト'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

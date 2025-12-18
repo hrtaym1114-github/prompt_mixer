@@ -175,34 +175,14 @@ class _TemplateEditScreenState extends State<TemplateEditScreen> {
             const SizedBox(height: 16),
 
             // カテゴリ
-            FutureBuilder<List<String>>(
-              future: Provider.of<TemplateProvider>(context, listen: false).categories,
-              builder: (context, snapshot) {
-                final categories = snapshot.data ?? [];
-                return TextField(
-                  controller: _categoryController,
-                  decoration: InputDecoration(
-                    labelText: 'カテゴリ',
-                    hintText: '例: 要約、SNS、技術',
-                    prefixIcon: const Icon(Icons.category),
-                    suffixIcon: categories.isNotEmpty
-                        ? PopupMenuButton<String>(
-                            icon: const Icon(Icons.arrow_drop_down),
-                            onSelected: (value) {
-                              _categoryController.text = value;
-                            },
-                            itemBuilder: (context) => categories
-                                .map((c) => PopupMenuItem(
-                                      value: c,
-                                      child: Text(c),
-                                    ))
-                                .toList(),
-                          )
-                        : null,
-                  ),
-                  textInputAction: TextInputAction.next,
-                );
-              },
+            TextField(
+              controller: _categoryController,
+              decoration: const InputDecoration(
+                labelText: 'カテゴリ',
+                hintText: '例: 要約、SNS、技術',
+                prefixIcon: Icon(Icons.category),
+              ),
+              textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 16),
 
