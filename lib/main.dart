@@ -198,18 +198,10 @@ class MainNavigator extends StatefulWidget {
 class _MainNavigatorState extends State<MainNavigator> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    TemplateListScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: _buildCurrentScreen(),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -246,5 +238,16 @@ class _MainNavigatorState extends State<MainNavigator> {
         ),
       ),
     );
+  }
+
+  Widget _buildCurrentScreen() {
+    switch (_currentIndex) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const TemplateListScreenContent();
+      default:
+        return const HomeScreen();
+    }
   }
 }

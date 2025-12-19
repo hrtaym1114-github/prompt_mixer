@@ -5,6 +5,167 @@ import '../models/prompt_template.dart';
 import '../theme/app_theme.dart';
 import 'template_edit_screen.dart';
 
+/// MainNavigator内で使用するScaffoldなし版
+class TemplateListScreenContent extends StatelessWidget {
+  const TemplateListScreenContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          // ヘッダー
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceDark,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'テンプレート管理',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                Consumer<TemplateProvider>(
+                  builder: (context, provider, child) {
+                    return IconButton(
+                      icon: Icon(
+                        provider.showFavoritesOnly
+                            ? Icons.star
+                            : Icons.star_border,
+                        color: provider.showFavoritesOnly
+                            ? Colors.amber
+                            : AppTheme.textSecondary,
+                      ),
+                      onPressed: () => provider.toggleFavoritesOnly(),
+                      tooltip: 'お気に入りのみ表示',
+                    );
+                  },
+                ),
+                // 新規作成ボタン
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  color: AppTheme.primaryPurple,
+                  onPressed: () => _navigateToEdit(context, null),
+                  tooltip: '新規作成',
+                ),
+              ],
+            ),
+          ),
+          // テンプレートリスト
+          Expanded(
+            child: Consumer<TemplateProvider>(
+              builder: (context, provider, child) {
+                final templates = provider.templates;
+
+                if (templates.isEmpty) {
+                  return _buildEmptyState(context);
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: templates.length,
+                  itemBuilder: (context, index) {
+                    final template = templates[index];
+                    return _TemplateListItem(
+                      template: template,
+                      onEdit: () => _navigateToEdit(context, template),
+                      onDelete: () => _showDeleteDialog(context, template),
+                      onToggleFavorite: () {
+                        provider.toggleFavorite(template.id);
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.description_outlined,
+            size: 64,
+            color: AppTheme.textSecondary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'テンプレートがありません',
+            style: TextStyle(
+              fontSize: 18,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '右上の＋ボタンから新規作成してください',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void _navigateToEdit(BuildContext context, PromptTemplate? template) {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (context) => TemplateEditScreen(template: template),
+      ),
+    );
+  }
+
+  static void _showDeleteDialog(BuildContext context, PromptTemplate template) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('テンプレートを削除'),
+        content: Text('「${template.title}」を削除しますか？\nこの操作は元に戻せません。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<TemplateProvider>().deleteTemplate(template.id);
+              Navigator.pop(dialogContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('削除しました')),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorRed),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 独立して使用するScaffold付き版（将来的に使う可能性あり）
 class TemplateListScreen extends StatelessWidget {
   const TemplateListScreen({super.key});
 
@@ -38,14 +199,10 @@ class TemplateListScreen extends StatelessWidget {
 
           return Column(
             children: [
-              // カテゴリフィルター（将来的にFutureBuilderで実装予定）
-              // 現在はシンプルにスキップ
-              const SizedBox.shrink(),
-
               // テンプレートリスト
               Expanded(
                 child: templates.isEmpty
-                    ? _buildEmptyState(context)
+                    ? TemplateListScreenContent._buildEmptyState(context)
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: templates.length,
@@ -53,8 +210,8 @@ class TemplateListScreen extends StatelessWidget {
                           final template = templates[index];
                           return _TemplateListItem(
                             template: template,
-                            onEdit: () => _navigateToEdit(context, template),
-                            onDelete: () => _showDeleteDialog(context, template),
+                            onEdit: () => TemplateListScreenContent._navigateToEdit(context, template),
+                            onDelete: () => TemplateListScreenContent._showDeleteDialog(context, template),
                             onToggleFavorite: () {
                               provider.toggleFavorite(template.id);
                             },
@@ -67,76 +224,9 @@ class TemplateListScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToEdit(context, null),
+        onPressed: () => TemplateListScreenContent._navigateToEdit(context, null),
         icon: const Icon(Icons.add),
         label: const Text('新規作成'),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.description_outlined,
-            size: 64,
-            color: AppTheme.textSecondary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'テンプレートがありません',
-            style: TextStyle(
-              fontSize: 18,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '下のボタンから新規作成してください',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToEdit(BuildContext context, PromptTemplate? template) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TemplateEditScreen(template: template),
-      ),
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context, PromptTemplate template) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('テンプレートを削除'),
-        content: Text('「${template.title}」を削除しますか？\nこの操作は元に戻せません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<TemplateProvider>().deleteTemplate(template.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('削除しました')),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppTheme.errorRed),
-            child: const Text('削除'),
-          ),
-        ],
       ),
     );
   }
