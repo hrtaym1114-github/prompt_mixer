@@ -134,6 +134,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader() {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -222,34 +225,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               }
             },
-            itemBuilder: (context) => [
+            itemBuilder: (popupContext) => [
               PopupMenuItem(
                 value: 'user',
                 enabled: false,
-                child: Consumer<AuthProvider>(
-                  builder: (context, authProvider, _) {
-                    final user = authProvider.user;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.displayName ?? 'ユーザー',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
-                          ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user?.displayName ?? 'ユーザー',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    if (user?.email != null)
+                      Text(
+                        user!.email!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
                         ),
-                        if (user?.email != null)
-                          Text(
-                            user!.email!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                      ],
-                    );
-                  },
+                      ),
+                  ],
                 ),
               ),
               const PopupMenuDivider(),
