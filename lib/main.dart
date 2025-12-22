@@ -6,6 +6,7 @@ import 'services/storage_service.dart';
 import 'services/auth_service.dart';
 import 'providers/template_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/shortcut_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -160,6 +161,10 @@ class _AppInitializerState extends State<AppInitializer> {
             }
             return templateProvider ?? TemplateProvider();
           },
+        ),
+        // ShortcutProviderを追加（app_shortcut_bar等で使用）
+        ChangeNotifierProvider(
+          create: (_) => ShortcutProvider()..loadShortcuts(),
         ),
       ],
       child: const AuthGate(),
