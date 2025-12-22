@@ -135,7 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     final authProvider = context.watch<AuthProvider>();
-    final user = authProvider.user;
+    // 値を事前にキャプチャ（PopupMenuのオーバーレイでProvider問題を回避）
+    final userName = authProvider.user?.displayName ?? 'ユーザー';
+    final userEmail = authProvider.user?.email;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -194,81 +196,105 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: _clearAll,
             tooltip: 'クリア',
           ),
-          PopupMenuButton<String>(
+          // アカウントメニューボタン
+          IconButton(
             icon: const Icon(Icons.account_circle, color: AppTheme.textSecondary),
             tooltip: 'アカウント',
-            color: AppTheme.surfaceDark,
-            onSelected: (value) async {
-              if (value == 'logout') {
-                final shouldLogout = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('ログアウト'),
-                    content: const Text('ログアウトしますか？\nデータはクラウドに保存されています。'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('キャンセル'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppTheme.errorRed,
-                        ),
-                        child: const Text('ログアウト'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (shouldLogout == true && mounted) {
-                  await context.read<AuthProvider>().signOut();
-                }
-              }
-            },
-            itemBuilder: (popupContext) => [
-              PopupMenuItem(
-                value: 'user',
-                enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.displayName ?? 'ユーザー',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    if (user?.email != null)
-                      Text(
-                        user!.email!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, size: 20, color: AppTheme.errorRed),
-                    const SizedBox(width: 12),
-                    Text(
-                      'ログアウト',
-                      style: TextStyle(color: AppTheme.textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            onPressed: () => _showAccountMenu(userName, userEmail, authProvider),
           ),
         ],
       ),
+    );
+  }
+
+  void _showAccountMenu(String userName, String? userEmail, AuthProvider authProvider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ユーザー情報
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_circle, size: 48, color: AppTheme.textSecondary),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              userName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            if (userEmail != null)
+                              Text(
+                                userEmail,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(color: AppTheme.dividerColor),
+                // ログアウトボタン
+                ListTile(
+                  leading: const Icon(Icons.logout, color: AppTheme.errorRed),
+                  title: const Text(
+                    'ログアウト',
+                    style: TextStyle(color: AppTheme.errorRed),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    final shouldLogout = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('ログアウト'),
+                        content: const Text('ログアウトしますか？\nデータはクラウドに保存されています。'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, false),
+                            child: const Text('キャンセル'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.errorRed,
+                            ),
+                            child: const Text('ログアウト'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (shouldLogout == true && mounted) {
+                      await authProvider.signOut();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
