@@ -208,44 +208,127 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAccountMenu(String userName, String? userEmail, AuthProvider authProvider) {
-    // SnackBarを使用（Flutter Webで最も確実に動作）
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+    // ダイアログ形式のアカウントメニュー（Flutter Webで確実に動作）
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF2D2D2D),
-        duration: const Duration(seconds: 10),
-        content: Row(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        contentPadding: const EdgeInsets.all(0),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.account_circle, color: Colors.white70, size: 32),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // アカウント情報ヘッダー
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryPurple.withValues(alpha: 0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    userName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryPurple.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.account_circle,
+                      color: AppTheme.primaryPurple,
+                      size: 40,
                     ),
                   ),
-                  if (userEmail != null)
-                    Text(
-                      userEmail,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white60,
-                      ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (userEmail != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            userEmail,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.white60,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
+                  ),
                 ],
               ),
             ),
+            // メニュー項目
+            const Divider(height: 1, color: Colors.white12),
+            // ログアウトボタン
+            InkWell(
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _confirmLogout(authProvider);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.logout,
+                      color: Color(0xFFEF5350),
+                      size: 24,
+                    ),
+                    SizedBox(width: 16),
+                    Text(
+                      'ログアウト',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFFEF5350),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // キャンセルボタン
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    '閉じる',
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
-        ),
-        action: SnackBarAction(
-          label: 'ログアウト',
-          textColor: Colors.redAccent,
-          onPressed: () => _confirmLogout(authProvider),
         ),
       ),
     );
