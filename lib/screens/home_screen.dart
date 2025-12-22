@@ -208,15 +208,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAccountMenu(String userName, String? userEmail, AuthProvider authProvider) {
-    // SimpleDialogを使用（Flutter Webでより安定）
-    showDialog<String>(
+    // AlertDialogを使用（Flutter Webで最も安定）
+    showDialog<void>(
       context: context,
+      useRootNavigator: true,
+      barrierDismissible: true,
       builder: (dialogContext) {
-        return SimpleDialog(
+        return AlertDialog(
           backgroundColor: const Color(0xFF2D2D2D),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
           title: Row(
             children: [
               const Icon(
@@ -251,13 +255,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          children: [
-            SimpleDialogOption(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _confirmLogout(authProvider);
-              },
-              child: const Row(
+          content: InkWell(
+            onTap: () {
+              Navigator.pop(dialogContext);
+              _confirmLogout(authProvider);
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Row(
                 children: [
                   Icon(Icons.logout, color: Colors.redAccent),
                   SizedBox(width: 12),
@@ -271,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-          ],
+          ),
         );
       },
     );
@@ -280,6 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _confirmLogout(AuthProvider authProvider) async {
     final shouldLogout = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text(
