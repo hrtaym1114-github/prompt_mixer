@@ -127,6 +127,14 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: surfaceDark,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        textStyle: const TextStyle(color: textPrimary),
+      ),
     );
   }
 }
