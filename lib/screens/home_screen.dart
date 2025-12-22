@@ -197,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.account_circle, color: AppTheme.textSecondary),
             tooltip: 'アカウント',
+            color: AppTheme.surfaceDark,
             onSelected: (value) async {
               if (value == 'logout') {
                 final shouldLogout = await showDialog<bool>(
@@ -219,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 );
-                
+
                 if (shouldLogout == true && mounted) {
                   await context.read<AuthProvider>().signOut();
                 }
@@ -251,13 +252,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, size: 20, color: AppTheme.errorRed),
-                    SizedBox(width: 12),
-                    Text('ログアウト'),
+                    const Icon(Icons.logout, size: 20, color: AppTheme.errorRed),
+                    const SizedBox(width: 12),
+                    Text(
+                      'ログアウト',
+                      style: TextStyle(color: AppTheme.textPrimary),
+                    ),
                   ],
                 ),
               ),
