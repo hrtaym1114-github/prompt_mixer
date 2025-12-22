@@ -208,26 +208,45 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAccountMenu(String userName, String? userEmail, AuthProvider authProvider) {
-    // ルートナビゲーターを使用して全画面モーダルを表示
-    Navigator.of(context, rootNavigator: true).push(
-      PageRouteBuilder(
-        opaque: false,
-        barrierColor: Colors.black54,
-        barrierDismissible: true,
-        pageBuilder: (pageContext, animation, secondaryAnimation) {
-          return _AccountMenuOverlay(
-            userName: userName,
-            userEmail: userEmail,
-            onLogout: () {
-              Navigator.of(pageContext, rootNavigator: true).pop();
-              _confirmLogout(authProvider);
-            },
-            onClose: () => Navigator.of(pageContext, rootNavigator: true).pop(),
-          );
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+    // SnackBarを使用（Flutter Webで最も確実に動作）
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: const Color(0xFF2D2D2D),
+        duration: const Duration(seconds: 10),
+        content: Row(
+          children: [
+            const Icon(Icons.account_circle, color: Colors.white70, size: 32),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (userEmail != null)
+                    Text(
+                      userEmail,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white60,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'ログアウト',
+          textColor: Colors.redAccent,
+          onPressed: () => _confirmLogout(authProvider),
+        ),
       ),
     );
   }
@@ -265,112 +284,5 @@ class _HomeScreenState extends State<HomeScreen> {
     if (shouldLogout == true && mounted) {
       await authProvider.signOut();
     }
-  }
-}
-
-/// アカウントメニューのオーバーレイウィジェット
-class _AccountMenuOverlay extends StatelessWidget {
-  final String userName;
-  final String? userEmail;
-  final VoidCallback onLogout;
-  final VoidCallback onClose;
-
-  const _AccountMenuOverlay({
-    required this.userName,
-    required this.userEmail,
-    required this.onLogout,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onClose,
-      child: Material(
-        color: Colors.transparent,
-        child: Center(
-          child: GestureDetector(
-            onTap: () {}, // 内部タップを無視
-            child: Container(
-              width: 300,
-              margin: const EdgeInsets.all(24),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ユーザー情報
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.account_circle,
-                        size: 48,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              userName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            if (userEmail != null)
-                              Text(
-                                userEmail!,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white60,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const Divider(color: Colors.white24, height: 1),
-                  const SizedBox(height: 12),
-                  // ログアウトボタン
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton.icon(
-                      onPressed: onLogout,
-                      icon: const Icon(Icons.logout, color: Colors.redAccent),
-                      label: const Text(
-                        'ログアウト',
-                        style: TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 16,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        alignment: Alignment.centerLeft,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
