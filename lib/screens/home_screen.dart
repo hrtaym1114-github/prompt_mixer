@@ -208,77 +208,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAccountMenu(String userName, String? userEmail, AuthProvider authProvider) {
-    // AlertDialogを使用（Flutter Webで最も安定）
-    showDialog<void>(
-      context: context,
-      useRootNavigator: true,
-      barrierDismissible: true,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2D2D2D),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          title: Row(
-            children: [
-              const Icon(
-                Icons.account_circle,
-                size: 40,
-                color: Colors.white70,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      userName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    if (userEmail != null)
-                      Text(
-                        userEmail,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white60,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          content: InkWell(
-            onTap: () {
-              Navigator.pop(dialogContext);
+    // 全画面モーダルを使用（Flutter Webのダイアログ問題を回避）
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black54,
+        barrierDismissible: true,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return _AccountMenuOverlay(
+            userName: userName,
+            userEmail: userEmail,
+            onLogout: () {
+              Navigator.of(context).pop();
               _confirmLogout(authProvider);
             },
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Icon(Icons.logout, color: Colors.redAccent),
-                  SizedBox(width: 12),
-                  Text(
-                    'ログアウト',
-                    style: TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+            onClose: () => Navigator.of(context).pop(),
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
     );
   }
 
@@ -315,5 +265,112 @@ class _HomeScreenState extends State<HomeScreen> {
     if (shouldLogout == true && mounted) {
       await authProvider.signOut();
     }
+  }
+}
+
+/// アカウントメニューのオーバーレイウィジェット
+class _AccountMenuOverlay extends StatelessWidget {
+  final String userName;
+  final String? userEmail;
+  final VoidCallback onLogout;
+  final VoidCallback onClose;
+
+  const _AccountMenuOverlay({
+    required this.userName,
+    required this.userEmail,
+    required this.onLogout,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onClose,
+      child: Material(
+        color: Colors.transparent,
+        child: Center(
+          child: GestureDetector(
+            onTap: () {}, // 内部タップを無視
+            child: Container(
+              width: 300,
+              margin: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2D2D),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ユーザー情報
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.account_circle,
+                        size: 48,
+                        color: Colors.white70,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              userName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            if (userEmail != null)
+                              Text(
+                                userEmail!,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white60,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(color: Colors.white24, height: 1),
+                  const SizedBox(height: 12),
+                  // ログアウトボタン
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: onLogout,
+                      icon: const Icon(Icons.logout, color: Colors.redAccent),
+                      label: const Text(
+                        'ログアウト',
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 16,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        alignment: Alignment.centerLeft,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
