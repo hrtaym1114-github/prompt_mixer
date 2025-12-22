@@ -32,35 +32,55 @@ class ShortcutManageScreen extends StatelessWidget {
   }
 
   void _showAddDialog(BuildContext context) {
+    // ダイアログを表示する前にProviderとScaffoldMessengerをキャプチャ
+    final shortcutProvider = context.read<ShortcutProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
-      builder: (context) => const _ShortcutEditDialog(),
+      builder: (dialogContext) => _ShortcutEditDialog(
+        provider: shortcutProvider,
+        scaffoldMessenger: scaffoldMessenger,
+      ),
     );
   }
 
   void _showEditDialog(BuildContext context, AppShortcut shortcut) {
+    // ダイアログを表示する前にProviderとScaffoldMessengerをキャプチャ
+    final shortcutProvider = context.read<ShortcutProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
-      builder: (context) => _ShortcutEditDialog(shortcut: shortcut),
+      builder: (dialogContext) => _ShortcutEditDialog(
+        shortcut: shortcut,
+        provider: shortcutProvider,
+        scaffoldMessenger: scaffoldMessenger,
+      ),
     );
   }
 
   void _showDeleteDialog(BuildContext context, AppShortcut shortcut) {
+    // ダイアログを表示する前にProviderとScaffoldMessengerをキャプチャ
+    final shortcutProvider = context.read<ShortcutProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('ショートカットを削除'),
         content: Text('「${shortcut.name}」を削除しますか？'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('キャンセル'),
           ),
           TextButton(
             onPressed: () {
-              context.read<ShortcutProvider>().deleteShortcut(shortcut.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              // キャプチャ済みのProviderを使用
+              shortcutProvider.deleteShortcut(shortcut.id);
+              Navigator.pop(dialogContext);
+              scaffoldMessenger.showSnackBar(
                 const SnackBar(content: Text('削除しました')),
               );
             },
@@ -211,8 +231,14 @@ class _ShortcutListItem extends StatelessWidget {
 
 class _ShortcutEditDialog extends StatefulWidget {
   final AppShortcut? shortcut;
+  final ShortcutProvider provider;
+  final ScaffoldMessengerState scaffoldMessenger;
 
-  const _ShortcutEditDialog({this.shortcut});
+  const _ShortcutEditDialog({
+    this.shortcut,
+    required this.provider,
+    required this.scaffoldMessenger,
+  });
 
   @override
   State<_ShortcutEditDialog> createState() => _ShortcutEditDialogState();
@@ -271,21 +297,20 @@ class _ShortcutEditDialogState extends State<_ShortcutEditDialog> {
     final url = _urlController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      widget.scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text('名前を入力してください')),
       );
       return;
     }
 
     if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      widget.scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text('URLを入力してください')),
       );
       return;
     }
 
-    final provider = context.read<ShortcutProvider>();
-
+    // キャプチャ済みのProviderを使用
     if (isEditing) {
       final updated = widget.shortcut!.copyWith(
         name: name,
@@ -293,9 +318,9 @@ class _ShortcutEditDialogState extends State<_ShortcutEditDialog> {
         iconName: _selectedIcon,
         colorValue: _selectedColor,
       );
-      provider.updateShortcut(updated);
+      widget.provider.updateShortcut(updated);
     } else {
-      provider.createShortcut(
+      widget.provider.createShortcut(
         name: name,
         urlScheme: url,
         iconName: _selectedIcon,
@@ -304,7 +329,7 @@ class _ShortcutEditDialogState extends State<_ShortcutEditDialog> {
     }
 
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    widget.scaffoldMessenger.showSnackBar(
       SnackBar(content: Text(isEditing ? '更新しました' : '追加しました')),
     );
   }

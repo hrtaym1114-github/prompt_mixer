@@ -143,6 +143,10 @@ class TemplateListScreenContent extends StatelessWidget {
   }
 
   static void _showDeleteDialog(BuildContext context, PromptTemplate template) {
+    // ダイアログを表示する前にProviderとScaffoldMessengerをキャプチャ
+    final templateProvider = context.read<TemplateProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -155,9 +159,10 @@ class TemplateListScreenContent extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              context.read<TemplateProvider>().deleteTemplate(template.id);
+              // キャプチャ済みのProviderを使用（ダイアログcontext外）
+              templateProvider.deleteTemplate(template.id);
               Navigator.pop(dialogContext);
-              ScaffoldMessenger.of(context).showSnackBar(
+              scaffoldMessenger.showSnackBar(
                 const SnackBar(content: Text('削除しました')),
               );
             },
