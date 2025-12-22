@@ -208,87 +208,83 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAccountMenu(String userName, String? userEmail, AuthProvider authProvider) {
-    showModalBottomSheet(
+    // showDialogを使用（Flutter Web本番ビルドでより安定）
+    showDialog(
       context: context,
-      backgroundColor: AppTheme.surfaceDark,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            width: 300,
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // ユーザー情報
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.account_circle, size: 48, color: AppTheme.textSecondary),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.account_circle,
+                      size: 48,
+                      color: Color(0xFF9E9E9E),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          if (userEmail != null)
                             Text(
-                              userName,
+                              userEmail,
                               style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimary,
+                                fontSize: 13,
+                                color: Color(0xFF9E9E9E),
                               ),
                             ),
-                            if (userEmail != null)
-                              Text(
-                                userEmail,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(color: AppTheme.dividerColor),
-                // ログアウトボタン
-                ListTile(
-                  leading: const Icon(Icons.logout, color: AppTheme.errorRed),
-                  title: const Text(
-                    'ログアウト',
-                    style: TextStyle(color: AppTheme.errorRed),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(sheetContext);
-                    final shouldLogout = await showDialog<bool>(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        title: const Text('ログアウト'),
-                        content: const Text('ログアウトしますか？\nデータはクラウドに保存されています。'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, false),
-                            child: const Text('キャンセル'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, true),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppTheme.errorRed,
-                            ),
-                            child: const Text('ログアウト'),
-                          ),
                         ],
                       ),
-                    );
-
-                    if (shouldLogout == true && mounted) {
-                      await authProvider.signOut();
-                    }
-                  },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(color: Color(0xFF424242), height: 1),
+                const SizedBox(height: 8),
+                // ログアウトボタン
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(dialogContext);
+                      _confirmLogout(authProvider);
+                    },
+                    icon: const Icon(
+                      Icons.logout,
+                      color: Color(0xFFEF5350),
+                    ),
+                    label: const Text(
+                      'ログアウト',
+                      style: TextStyle(
+                        color: Color(0xFFEF5350),
+                        fontSize: 16,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      alignment: Alignment.centerLeft,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -296,5 +292,39 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  void _confirmLogout(AuthProvider authProvider) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text(
+          'ログアウト',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'ログアウトしますか？\nデータはクラウドに保存されています。',
+          style: TextStyle(color: Color(0xFF9E9E9E)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFEF5350),
+            ),
+            child: const Text('ログアウト'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true && mounted) {
+      await authProvider.signOut();
+    }
   }
 }
