@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/prompt_template.dart';
 import '../services/firestore_service.dart';
+import '../services/storage_service.dart';
 
 class TemplateProvider extends ChangeNotifier {
   List<PromptTemplate> _templates = [];
@@ -9,6 +10,10 @@ class TemplateProvider extends ChangeNotifier {
   String? _selectedCategory;
   bool _showFavoritesOnly = false;
   bool _isLoading = false;
+  bool _isDevMode = false;
+
+  /// 開発モードかどうか
+  bool get isDevMode => _isDevMode;
 
   List<PromptTemplate> get templates {
     var result = _templates;
@@ -31,8 +36,12 @@ class TemplateProvider extends ChangeNotifier {
   bool get showFavoritesOnly => _showFavoritesOnly;
   bool get isLoading => _isLoading;
 
-  Future<List<String>> get categories async => 
-      await FirestoreService.getAllCategories();
+  Future<List<String>> get categories async {
+    if (_isDevMode) {
+      return StorageService.getAllCategories();
+    }
+    return await FirestoreService.getAllCategories();
+  }
 
   /// 生成されたプロンプト出力
   String get generatedOutput {
@@ -45,18 +54,31 @@ class TemplateProvider extends ChangeNotifier {
     return _selectedTemplate!.generateOutput(_currentUrl);
   }
 
-  /// 初期化（Firestoreからロード）
-  Future<void> loadTemplates({String? userId}) async {
+  /// 初期化（Firestore または ローカルストレージからロード）
+  Future<void> loadTemplates({String? userId, bool isDevMode = false}) async {
     _isLoading = true;
+    _isDevMode = isDevMode;
     notifyListeners();
-    
+
     try {
-      if (kDebugMode) {
-        debugPrint('🔄 Loading templates for user: ${userId ?? "current user"}');
-      }
-      _templates = await FirestoreService.getAllTemplates(userId: userId);
-      if (kDebugMode) {
-        debugPrint('✅ Loaded ${_templates.length} templates');
+      if (_isDevMode) {
+        // 開発モード: ローカルストレージを使用
+        if (kDebugMode) {
+          debugPrint('🔧 Dev mode: Loading templates from local storage');
+        }
+        _templates = StorageService.getAllTemplates();
+        if (kDebugMode) {
+          debugPrint('✅ Dev mode: Loaded ${_templates.length} templates from local storage');
+        }
+      } else {
+        // 通常モード: Firestoreを使用
+        if (kDebugMode) {
+          debugPrint('🔄 Loading templates for user: ${userId ?? "current user"}');
+        }
+        _templates = await FirestoreService.getAllTemplates(userId: userId);
+        if (kDebugMode) {
+          debugPrint('✅ Loaded ${_templates.length} templates');
+        }
       }
     } catch (e) {
       if (kDebugMode) {
@@ -115,13 +137,25 @@ class TemplateProvider extends ChangeNotifier {
     String? category,
   }) async {
     try {
-      await FirestoreService.createTemplate(
-        title: title,
-        content: content,
-        description: description,
-        category: category,
-      );
-      await loadTemplates();
+      if (_isDevMode) {
+        // 開発モード: ローカルストレージに保存
+        await StorageService.createTemplate(
+          title: title,
+          content: content,
+          description: description,
+          category: category,
+        );
+        await loadTemplates(isDevMode: true);
+      } else {
+        // 通常モード: Firestoreに保存
+        await FirestoreService.createTemplate(
+          title: title,
+          content: content,
+          description: description,
+          category: category,
+        );
+        await loadTemplates();
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Create template error: $e');
@@ -133,9 +167,16 @@ class TemplateProvider extends ChangeNotifier {
   /// テンプレートを更新
   Future<void> updateTemplate(PromptTemplate template) async {
     try {
-      await FirestoreService.updateTemplate(template);
-      await loadTemplates();
-      
+      if (_isDevMode) {
+        // 開発モード: ローカルストレージを更新
+        await StorageService.updateTemplate(template);
+        await loadTemplates(isDevMode: true);
+      } else {
+        // 通常モード: Firestoreを更新
+        await FirestoreService.updateTemplate(template);
+        await loadTemplates();
+      }
+
       // 選択中のテンプレートが更新された場合、再取得
       if (_selectedTemplate?.id == template.id) {
         _selectedTemplate = _templates.firstWhere(
@@ -155,14 +196,20 @@ class TemplateProvider extends ChangeNotifier {
   /// テンプレートを削除
   Future<void> deleteTemplate(String id) async {
     try {
-      await FirestoreService.deleteTemplate(id);
-      
+      if (_isDevMode) {
+        // 開発モード: ローカルストレージから削除
+        await StorageService.deleteTemplate(id);
+        await loadTemplates(isDevMode: true);
+      } else {
+        // 通常モード: Firestoreから削除
+        await FirestoreService.deleteTemplate(id);
+        await loadTemplates();
+      }
+
       // 選択中のテンプレートが削除された場合、選択解除
       if (_selectedTemplate?.id == id) {
         _selectedTemplate = null;
       }
-      
-      await loadTemplates();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Delete template error: $e');
@@ -175,9 +222,17 @@ class TemplateProvider extends ChangeNotifier {
   Future<void> toggleFavorite(String id) async {
     try {
       final template = _templates.firstWhere((t) => t.id == id);
-      await FirestoreService.toggleFavorite(id, template.isFavorite);
-      await loadTemplates();
-      
+
+      if (_isDevMode) {
+        // 開発モード: ローカルストレージを更新
+        await StorageService.toggleFavorite(id);
+        await loadTemplates(isDevMode: true);
+      } else {
+        // 通常モード: Firestoreを更新
+        await FirestoreService.toggleFavorite(id, template.isFavorite);
+        await loadTemplates();
+      }
+
       // 選択中のテンプレートの場合、再取得
       if (_selectedTemplate?.id == id) {
         _selectedTemplate = _templates.firstWhere(

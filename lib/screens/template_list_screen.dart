@@ -130,9 +130,14 @@ class TemplateListScreenContent extends StatelessWidget {
   }
 
   static void _navigateToEdit(BuildContext context, PromptTemplate? template) {
-    Navigator.of(context, rootNavigator: true).push(
+    // Providerのスコープを維持するためにrootNavigatorを使わない
+    final templateProvider = context.read<TemplateProvider>();
+    Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => TemplateEditScreen(template: template),
+        builder: (routeContext) => ChangeNotifierProvider.value(
+          value: templateProvider,
+          child: TemplateEditScreen(template: template),
+        ),
       ),
     );
   }

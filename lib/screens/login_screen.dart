@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
+import '../config/dev_config.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -155,13 +157,53 @@ class LoginScreen extends StatelessWidget {
                             textAlign: TextAlign.center,
                           ),
                         ],
+
+                        // 開発モードボタン（デバッグビルドのみ表示）
+                        if (DevConfig.isDevModeAvailable) ...[
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  await authProvider.signInAsDevUser();
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('開発モードログインに失敗しました: ${e.toString()}'),
+                                        backgroundColor: AppTheme.errorRed,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.developer_mode, size: 20),
+                              label: const Text(
+                                '開発モードで起動',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.orange,
+                                side: const BorderSide(color: Colors.orange),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     );
                   },
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // プライバシー情報
                 const Text(
                   '無料で利用できます\nデータはクラウドに安全に保存されます',

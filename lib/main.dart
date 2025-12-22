@@ -148,9 +148,13 @@ class _AppInitializerState extends State<AppInitializer> {
         ChangeNotifierProxyProvider<AuthProvider, TemplateProvider>(
           create: (_) => TemplateProvider(),
           update: (_, authProvider, templateProvider) {
-            final userId = authProvider.user?.uid;
+            // effectiveUserId を使用（開発モードにも対応）
+            final userId = authProvider.effectiveUserId;
+            final isDevMode = authProvider.isDevMode;
             if (userId != null && userId.isNotEmpty) {
-              templateProvider?.loadTemplates(userId: userId);
+              templateProvider?.loadTemplates(userId: userId, isDevMode: isDevMode);
+            } else if (isDevMode) {
+              templateProvider?.loadTemplates(isDevMode: true);
             } else {
               templateProvider?.loadTemplates();
             }
