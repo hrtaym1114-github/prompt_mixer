@@ -208,87 +208,70 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAccountMenu(String userName, String? userEmail, AuthProvider authProvider) {
-    // showDialogを使用（Flutter Web本番ビルドでより安定）
-    showDialog(
+    // SimpleDialogを使用（Flutter Webでより安定）
+    showDialog<String>(
       context: context,
-      barrierDismissible: true,
       builder: (dialogContext) {
-        return Dialog(
-          backgroundColor: const Color(0xFF1E1E1E),
+        return SimpleDialog(
+          backgroundColor: const Color(0xFF2D2D2D),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Container(
-            width: 300,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ユーザー情報
-                Row(
+          title: Row(
+            children: [
+              const Icon(
+                Icons.account_circle,
+                size: 40,
+                color: Colors.white70,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.account_circle,
-                      size: 48,
-                      color: Color(0xFF9E9E9E),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userName,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          if (userEmail != null)
-                            Text(
-                              userEmail,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF9E9E9E),
-                              ),
-                            ),
-                        ],
+                    Text(
+                      userName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
+                    if (userEmail != null)
+                      Text(
+                        userEmail,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white60,
+                        ),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                const Divider(color: Color(0xFF424242), height: 1),
-                const SizedBox(height: 8),
-                // ログアウトボタン
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(dialogContext);
-                      _confirmLogout(authProvider);
-                    },
-                    icon: const Icon(
-                      Icons.logout,
-                      color: Color(0xFFEF5350),
-                    ),
-                    label: const Text(
-                      'ログアウト',
-                      style: TextStyle(
-                        color: Color(0xFFEF5350),
-                        fontSize: 16,
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      alignment: Alignment.centerLeft,
+              ),
+            ],
+          ),
+          children: [
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _confirmLogout(authProvider);
+              },
+              child: const Row(
+                children: [
+                  Icon(Icons.logout, color: Colors.redAccent),
+                  SizedBox(width: 12),
+                  Text(
+                    'ログアウト',
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 16,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         );
       },
     );
