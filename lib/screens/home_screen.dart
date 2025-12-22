@@ -208,21 +208,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAccountMenu(String userName, String? userEmail, AuthProvider authProvider) {
-    // 全画面モーダルを使用（Flutter Webのダイアログ問題を回避）
-    Navigator.of(context).push(
+    // ルートナビゲーターを使用して全画面モーダルを表示
+    Navigator.of(context, rootNavigator: true).push(
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black54,
         barrierDismissible: true,
-        pageBuilder: (context, animation, secondaryAnimation) {
+        pageBuilder: (pageContext, animation, secondaryAnimation) {
           return _AccountMenuOverlay(
             userName: userName,
             userEmail: userEmail,
             onLogout: () {
-              Navigator.of(context).pop();
+              Navigator.of(pageContext, rootNavigator: true).pop();
               _confirmLogout(authProvider);
             },
-            onClose: () => Navigator.of(context).pop(),
+            onClose: () => Navigator.of(pageContext, rootNavigator: true).pop(),
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
