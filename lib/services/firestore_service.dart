@@ -1,19 +1,27 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 import '../models/prompt_template.dart';
-import 'auth_service.dart';
 
 class FirestoreService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static final AuthService _authService = AuthService();
   static const _uuid = Uuid();
+
+  /// 現在のユーザーIDを取得（直接FirebaseAuthを参照）
+  static String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
   /// ユーザーのテンプレートコレクションへの参照
   static CollectionReference<Map<String, dynamic>> _userTemplatesCollection({String? userId}) {
-    final uid = userId ?? _authService.userId;
+    final uid = userId ?? _currentUserId;
     if (uid == null) {
-      throw Exception('User not authenticated');
+      if (kDebugMode) {
+        debugPrint('❌ FirestoreService: User not authenticated. FirebaseAuth.instance.currentUser is null');
+      }
+      throw Exception('User not authenticated. Please sign in first.');
+    }
+    if (kDebugMode) {
+      debugPrint('📂 FirestoreService: Using userId: $uid');
     }
     return _firestore.collection('users').doc(uid).collection('templates');
   }
@@ -81,6 +89,12 @@ class FirestoreService {
     String? description,
     String? category,
   }) async {
+    if (kDebugMode) {
+      debugPrint('📝 FirestoreService.createTemplate: Starting...');
+      debugPrint('   Title: $title');
+      debugPrint('   Current user: ${_currentUserId ?? "null"}');
+    }
+
     final id = _uuid.v4();
     final now = DateTime.now();
 
@@ -94,17 +108,32 @@ class FirestoreService {
       category: category,
     );
 
-    await _userTemplatesCollection().doc(id).set({
-      'title': title,
-      'content': content,
-      'description': description,
-      'createdAt': Timestamp.fromDate(now),
-      'updatedAt': Timestamp.fromDate(now),
-      'isFavorite': false,
-      'category': category,
-    });
+    try {
+      final collection = _userTemplatesCollection();
+      if (kDebugMode) {
+        debugPrint('📤 FirestoreService: Writing to Firestore...');
+      }
+      
+      await collection.doc(id).set({
+        'title': title,
+        'content': content,
+        'description': description,
+        'createdAt': Timestamp.fromDate(now),
+        'updatedAt': Timestamp.fromDate(now),
+        'isFavorite': false,
+        'category': category,
+      });
 
-    return template;
+      if (kDebugMode) {
+        debugPrint('✅ FirestoreService.createTemplate: Success! Template ID: $id');
+      }
+      return template;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ FirestoreService.createTemplate: Error - $e');
+      }
+      rethrow;
+    }
   }
 
   /// テンプレートを更新
