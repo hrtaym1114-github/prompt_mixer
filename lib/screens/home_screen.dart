@@ -332,7 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
-                'Version 1.0.4 (Build 2025-12-23-001)',
+                'Version 1.0.5 (Build 2025-12-23-002)',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.white38,
