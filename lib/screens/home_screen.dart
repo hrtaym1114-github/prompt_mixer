@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/template_provider.dart';
 import '../providers/auth_provider.dart';
@@ -23,37 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _urlController.dispose();
     super.dispose();
-  }
-
-  void _copyToClipboard() {
-    final provider = context.read<TemplateProvider>();
-    final output = provider.generatedOutput;
-    
-    if (output.isEmpty) {
-      _showSnackBar('コピーする内容がありません', isError: true);
-      return;
-    }
-
-    Clipboard.setData(ClipboardData(text: output));
-    _showSnackBar('クリップボードにコピーしました！', isError: false);
-  }
-
-  void _showSnackBar(String message, {required bool isError}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: isError ? AppTheme.errorRed : AppTheme.successGreen,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   void _clearAll() {
@@ -116,20 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      floatingActionButton: Consumer<TemplateProvider>(
-        builder: (context, provider, child) {
-          final hasOutput = provider.generatedOutput.isNotEmpty;
-          return FloatingActionButton.extended(
-            onPressed: hasOutput ? _copyToClipboard : null,
-            backgroundColor: hasOutput 
-                ? AppTheme.primaryPurple 
-                : AppTheme.cardDark,
-            icon: const Icon(Icons.copy),
-            label: const Text('コピーのみ'),
-          );
-        },
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+
     );
   }
 
@@ -332,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
-                'Version 1.0.5 (Build 2025-12-23-002)',
+                'Version 1.0.6 (Build 2025-12-23-003)',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.white38,
