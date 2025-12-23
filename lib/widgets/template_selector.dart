@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/template_provider.dart';
 import '../models/prompt_template.dart';
 import '../theme/app_theme.dart';
-import '../screens/template_list_screen.dart';
 
 class TemplateSelector extends StatelessWidget {
   const TemplateSelector({super.key});
@@ -22,44 +21,27 @@ class TemplateSelector extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryPurple.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.description_outlined,
-                            color: AppTheme.primaryPurple,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Text(
-                          'テンプレート選択',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryPurple.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.description_outlined,
+                        color: AppTheme.primaryPurple,
+                        size: 20,
+                      ),
                     ),
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const TemplateListScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit_note, size: 20),
-                      label: const Text('管理'),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'テンプレート選択',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -75,7 +57,7 @@ class TemplateSelector extends StatelessWidget {
                     ),
                     child: const Center(
                       child: Text(
-                        'テンプレートがありません\n右上の「管理」から追加してください',
+                        'テンプレートがありません\n下部の「テンプレート」タブから追加してください',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: AppTheme.textSecondary),
                       ),
