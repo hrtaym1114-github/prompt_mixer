@@ -7,13 +7,44 @@ import '../providers/template_provider.dart';
 import '../theme/app_theme.dart';
 
 /// iOS/Android標準の共有機能を呼び出すボタン
-class ShareButton extends StatelessWidget {
+class ShareButton extends StatefulWidget {
   const ShareButton({super.key});
+
+  @override
+  State<ShareButton> createState() => _ShareButtonState();
+}
+
+class _ShareButtonState extends State<ShareButton> with WidgetsBindingObserver {
+  bool _isSharing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// アプリがフォアグラウンドに戻ったときの処理
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isSharing) {
+      // 共有から戻ってきたらフラグをリセット
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
+  }
 
   /// Web Share APIが利用可能かチェック
   bool _canShare() {
     try {
-      // Check if share function exists using hasProperty
       final navigator = web.window.navigator;
       return navigator.canShare(web.ShareData(text: 'test'));
     } catch (e) {
@@ -21,50 +52,63 @@ class ShareButton extends StatelessWidget {
     }
   }
 
-  /// 標準の共有シートを開く
-  Future<void> _share(BuildContext context, String text) async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+  /// 標準の共有シートを開く（awaitしない方式でフリーズ防止）
+  void _share(String text) {
+    if (_isSharing) return;
     
+    setState(() {
+      _isSharing = true;
+    });
+
+    // 先にクリップボードにコピーしておく（フォールバック用）
+    Clipboard.setData(ClipboardData(text: text));
+
     try {
       final shareData = web.ShareData(
         text: text,
         title: 'Prompt Mixer',
       );
       
-      await web.window.navigator.share(shareData).toDart;
-      
-      scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle_outline, color: AppTheme.successGreen),
-              SizedBox(width: 12),
-              Text('共有しました'),
-            ],
-          ),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // awaitせずに共有を開始（Promiseの完了を待たない）
+      // これによりiOSでアプリに戻った際のフリーズを防止
+      web.window.navigator.share(shareData).toDart.then((_) {
+        // 成功時（ユーザーが共有を完了）
+        if (mounted) {
+          setState(() {
+            _isSharing = false;
+          });
+        }
+      }).catchError((e) {
+        // キャンセルまたはエラー時
+        if (mounted) {
+          setState(() {
+            _isSharing = false;
+          });
+        }
+      });
     } catch (e) {
-      // ユーザーがキャンセルした場合やエラーの場合
-      // クリップボードにコピーするフォールバック
-      await Clipboard.setData(ClipboardData(text: text));
-      scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.content_copy, color: AppTheme.primaryPurple),
-              SizedBox(width: 12),
-              Text('クリップボードにコピーしました'),
-            ],
+      // 同期エラーの場合
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.content_copy, color: AppTheme.primaryPurple),
+                SizedBox(width: 12),
+                Text('クリップボードにコピーしました'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
           ),
-          duration: Duration(seconds: 2),
-        ),
-      );
+        );
+      }
     }
   }
 
-  void _handleTap(BuildContext context) {
+  void _handleTap() {
     final provider = context.read<TemplateProvider>();
     final output = provider.generatedOutput;
 
@@ -83,7 +127,7 @@ class ShareButton extends StatelessWidget {
       return;
     }
 
-    _share(context, output);
+    _share(output);
   }
 
   @override
@@ -130,7 +174,7 @@ class ShareButton extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: hasOutput ? () => _handleTap(context) : null,
+                    onPressed: hasOutput && !_isSharing ? () => _handleTap() : null,
                     icon: Icon(
                       canShare ? Icons.ios_share : Icons.copy,
                       size: 22,
