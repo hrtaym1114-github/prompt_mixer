@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/template_provider.dart';
 import '../providers/auth_provider.dart';
@@ -287,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
-                'Version 1.0.6 (Build 2025-12-23-003)',
+                'Version 1.0.6 (Build 2025-12-23-004)',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.white38,
