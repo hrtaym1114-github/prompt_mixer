@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'package:web/web.dart' as web;
 import '../providers/template_provider.dart';
 import '../theme/app_theme.dart';
+
+/// JavaScript側で共有を実行（Promiseを完全に切り離す）
+@JS('navigator.share')
+external JSPromise<JSAny?>? _jsShare(JSObject data);
 
 /// iOS/Android標準の共有機能を呼び出すボタン
 class ShareButton extends StatefulWidget {
@@ -52,7 +57,8 @@ class _ShareButtonState extends State<ShareButton> with WidgetsBindingObserver {
     }
   }
 
-  /// 標準の共有シートを開く（awaitしない方式でフリーズ防止）
+  /// 標準の共有シートを開く
+  /// ChatGPTアプリなど一部アプリがPromiseを解決しない問題に対応
   void _share(String text) {
     if (_isSharing) return;
     
@@ -64,22 +70,19 @@ class _ShareButtonState extends State<ShareButton> with WidgetsBindingObserver {
     Clipboard.setData(ClipboardData(text: text));
 
     try {
-      final shareData = web.ShareData(
-        text: text,
-        title: 'Prompt Mixer',
-      );
+      // JSObjectを直接作成してshareを呼び出す
+      // Promiseの結果を完全に無視することでフリーズを防止
+      final shareData = JSObject();
+      shareData['text'] = text.toJS;
+      shareData['title'] = 'Prompt Mixer'.toJS;
       
-      // awaitせずに共有を開始（Promiseの完了を待たない）
-      // これによりiOSでアプリに戻った際のフリーズを防止
-      web.window.navigator.share(shareData).toDart.then((_) {
-        // 成功時（ユーザーが共有を完了）
-        if (mounted) {
-          setState(() {
-            _isSharing = false;
-          });
-        }
-      }).catchError((e) {
-        // キャンセルまたはエラー時
+      // share()を呼び出すが、Promiseは追跡しない
+      // これにより、ChatGPTアプリがPromiseを解決しなくても影響なし
+      _jsShare(shareData);
+      
+      // 共有シートが開いたら即座にフラグをリセット
+      // （実際の共有完了は追跡しない）
+      Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
           setState(() {
             _isSharing = false;
@@ -87,7 +90,7 @@ class _ShareButtonState extends State<ShareButton> with WidgetsBindingObserver {
         }
       });
     } catch (e) {
-      // 同期エラーの場合
+      // エラーの場合
       if (mounted) {
         setState(() {
           _isSharing = false;
