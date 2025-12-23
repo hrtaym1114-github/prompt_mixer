@@ -307,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 8),
             // キャンセルボタン
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: SizedBox(
                 width: double.infinity,
                 child: TextButton(
@@ -325,6 +325,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontSize: 14,
                     ),
                   ),
+                ),
+              ),
+            ),
+            // バージョン情報
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Version 1.0.4 (Build 2024-12-22-002)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white38,
                 ),
               ),
             ),
